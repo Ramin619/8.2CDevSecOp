@@ -10,25 +10,25 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                bat 'npm install'
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh 'npm test || true'
+                bat 'npm test || exit /b 0'
             }
         }
 
         stage('Generate Coverage Report') {
             steps {
-                sh 'npm run coverage || true'
+                bat 'npm run coverage || exit /b 0'
             }
         }
 
         stage('NPM Audit (Security Scan)') {
             steps {
-                sh 'npm audit || true'
+                bat 'npm audit || exit /b 0'
             }
         }
 
@@ -39,8 +39,8 @@ pipeline {
             post {
                 success {
                     mail to: 'raminsenmitha@gmail.com',
-                    subject: 'Build Status Email',
-                    body: 'Build Was Successful'
+                         subject: 'Build Status Email',
+                         body: 'Build Was Successful'
                 }
             }
         }
