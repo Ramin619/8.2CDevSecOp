@@ -1,10 +1,6 @@
 pipeline {
   agent any
 
-  environment {
-        EMAIL_RECIPIENTS = 'raminsenmitha@gmail.com'
-  }
-
   stages {
     stage('Checkout') {
       steps {
@@ -35,17 +31,19 @@ pipeline {
         bat 'npm audit || exit /b 0'
       }
     }
-  }
 
-  post {
-        always {
-            emailext (
-                subject: "Jenkins Build #${BUILD_NUMBER}: ${currentBuild.currentResult}",
-                body: "Build Status: ${currentBuild.currentResult}\nCheck console output at: ${env.BUILD_URL}console",
-                to: "${EMAIL_RECIPIENTS}",
-                attachLog: true
-            )
+    stage("Build"){
+      steps{
+        echo "Building..."
+      }
+      post{
+        success{
+          mail to: "raminsenmitha@gmail.com",
+          subject: "Build Status Email",
+          body: "Build Was Successful!"
         }
+      }
     }
+  }
 }
 
