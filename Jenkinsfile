@@ -31,6 +31,19 @@ pipeline {
                 sh 'npm audit || true'
             }
         }
+
+        stage('Build') {
+            steps {
+                echo "Building..."
+            }
+            post {
+                success {
+                    mail to: 'raminsenmitha@gmail.com',
+                    subject: 'Build Status Email',
+                    body: 'Build Was Successful'
+                }
+            }
+        }
     }
 }
 
