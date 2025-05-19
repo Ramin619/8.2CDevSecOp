@@ -32,7 +32,7 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Email Notification') {
             steps {
                 echo "Building..."
             }
