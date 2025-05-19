@@ -1,6 +1,10 @@
 pipeline {
   agent any
 
+  environment {
+        EMAIL_RECIPIENTS = 'raminsenmitha@gmail.com'
+  }
+
   stages {
     stage('Checkout') {
       steps {
