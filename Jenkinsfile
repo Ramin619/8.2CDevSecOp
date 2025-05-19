@@ -32,5 +32,16 @@ pipeline {
       }
     }
   }
+
+  post {
+        always {
+            emailext (
+                subject: "Jenkins Build #${BUILD_NUMBER}: ${currentBuild.currentResult}",
+                body: "Build Status: ${currentBuild.currentResult}\nCheck console output at: ${env.BUILD_URL}console",
+                to: "${EMAIL_RECIPIENTS}",
+                attachLog: true
+            )
+        }
+    }
 }
 
