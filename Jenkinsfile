@@ -6,7 +6,6 @@ pipeline {
   }
 
   stages {
-
     stage('Checkout') {
       steps {
         script {
@@ -38,19 +37,21 @@ pipeline {
     stage('Run Tests') {
       steps {
         script {
-          try {
-            withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
+          withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
+            try {
               bat """
               echo. >> "${LOG_PATH}"
               echo ======= Run Tests ======= >> "${LOG_PATH}"
-              set SNYK_TOKEN=%SNYK_TOKEN%
+              snyk config set api=%SNYK_TOKEN% >> "${LOG_PATH}" 2>>&1
               npm test >> "${LOG_PATH}" 2>>&1
               echo [SUCCESS] Tests execution >> "${LOG_PATH}"
               """
+            } catch (e) {
+              bat """
+              echo [FAILURE] Tests execution >> "${LOG_PATH}"
+              """
+              error("Tests failed")
             }
-          } catch (e) {
-            bat "echo [FAILURE] Tests execution >> \"${LOG_PATH}\""
-            error("Tests failed")
           }
         }
       }
@@ -59,38 +60,31 @@ pipeline {
           bat "copy \"${LOG_PATH}\" pipeline_log.txt"
           emailext(
             subject: "Test Stage Result: ${currentBuild.result}",
-            body: "The test stage has completed with status: ${currentBuild.result}",
-            to: 'raminsenmitha@gmail.com',
-            attachmentsPattern: 'pipeline_log.txt'
+            body: "The test stage completed with status: ${currentBuild.result}",
+            to: "raminsenmitha@gmail.com",
+            attachmentsPattern: "pipeline_log.txt"
           )
         }
-      }
-    }
-
-    stage('Generate Coverage Report') {
-      steps {
-        bat """
-        echo. >> "${LOG_PATH}"
-        echo ======= Generate Coverage Report ======= >> "${LOG_PATH}"
-        npm run coverage >> "${LOG_PATH}" 2>>&1
-        echo [SUCCESS] Coverage report generation >> "${LOG_PATH}"
-        """
       }
     }
 
     stage('NPM Audit (Security Scan)') {
       steps {
         script {
-          try {
-            bat """
-            echo. >> "${LOG_PATH}"
-            echo ======= NPM Audit ======= >> "${LOG_PATH}"
-            npm audit >> "${LOG_PATH}" 2>>&1
-            echo [SUCCESS] NPM Audit completed >> "${LOG_PATH}"
-            """
-          } catch (e) {
-            bat "echo [FAILURE] NPM Audit >> \"${LOG_PATH}\""
-            error("Security scan failed")
+          withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
+            try {
+              bat """
+              echo. >> "${LOG_PATH}"
+              echo ======= Security Scan ======= >> "${LOG_PATH}"
+              snyk test >> "${LOG_PATH}" 2>>&1
+              echo [SUCCESS] Security scan completed >> "${LOG_PATH}"
+              """
+            } catch (e) {
+              bat """
+              echo [FAILURE] Security scan >> "${LOG_PATH}"
+              """
+              error("Security scan failed")
+            }
           }
         }
       }
@@ -99,9 +93,9 @@ pipeline {
           bat "copy \"${LOG_PATH}\" pipeline_log.txt"
           emailext(
             subject: "Security Scan Result: ${currentBuild.result}",
-            body: "The NPM audit stage has completed with status: ${currentBuild.result}",
-            to: 'raminsenmitha@gmail.com',
-            attachmentsPattern: 'pipeline_log.txt'
+            body: "The security scan stage completed with status: ${currentBuild.result}",
+            to: "raminsenmitha@gmail.com",
+            attachmentsPattern: "pipeline_log.txt"
           )
         }
       }
