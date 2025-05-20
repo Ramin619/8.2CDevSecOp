@@ -18,13 +18,7 @@ pipeline {
             steps {
                 script {
                     def testStatus = bat(script: 'npm test > email_noti_tests.txt 2>&1', returnStatus: true)
-                    def result = testStatus == 0 ? "SUCCESS" : "FAILURE"
-                    emailext(
-                        to: 'raminsenmitha@gmail.com',
-                        subject: "Test Stage Result: ${result}",
-                        body: "The 'Run Tests' stage has completed with status: ${result}.\nCheck the attached test log.",
-                        attachmentsPattern: 'email_noti_tests.txt'
-                    )
+                    writeFile file: 'email_noti_tests.txt', text: "Run Tests Stage: ${testStatus == 0 ? 'SUCCESS' : 'FAILURE'}\n" + readFile('email_noti_tests.txt')
                 }
             }
         }
@@ -39,14 +33,19 @@ pipeline {
             steps {
                 script {
                     def auditStatus = bat(script: 'npm audit > email_noti_audit.txt 2>&1', returnStatus: true)
-                    def result = auditStatus == 0 ? "SUCCESS" : "FAILURE"
-                    emailext(
-                        to: 'raminsenmitha@gmail.com',
-                        subject: "Security Scan Stage Result: Audit Status: ${result}",
-                        body: "The 'Security Scan' stage has completed with status: ${result}.\nCheck the attached audit log.",
-                        attachmentsPattern: 'email_noti_audit.txt'
-                    )
+                    writeFile file: 'email_noti_audit.txt', text: "NPM Audit Stage: ${auditStatus == 0 ? 'SUCCESS' : 'FAILURE'}\n" + readFile('email_noti_audit.txt')
                 }
+            }
+        }
+
+        stage('Email Notification') {
+            steps {
+                emailext(
+                    to: 'raminsenmitha@gmail.com',
+                    subject: 'Build Status Email',
+                    body: 'Please find the status of the stages attached.',
+                    attachmentsPattern: 'email_noti_tests.txt,email_noti_audit.txt'
+                )
             }
         }
     }
