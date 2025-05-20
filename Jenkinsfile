@@ -1,46 +1,93 @@
 pipeline {
     agent any
 
+    environment {
+        LOG_DIR = "${WORKSPACE}/logs"
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Ramin619/8.2CDevSecOp.git'
+                script {
+                    sh "mkdir -p ${LOG_DIR}"
+                    sh '''
+                    echo "Starting Checkout..." > $LOG_DIR/checkout_log.txt
+                    git clone https://github.com/Ramin619/8.2CDevSecOp.git >> $LOG_DIR/checkout_log.txt 2>&1
+                    '''
+                }
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                bat 'npm install'
+                script {
+                    sh '''
+                    echo "Installing dependencies..." > $LOG_DIR/install_log.txt
+                    npm install >> $LOG_DIR/install_log.txt 2>&1
+                    '''
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                bat 'npm test || exit /b 0'
+                script {
+                    try {
+                        sh '''
+                        echo "Running tests..." > $LOG_DIR/test_log.txt
+                        npm test >> $LOG_DIR/test_log.txt 2>&1
+                        '''
+                        currentBuild.result = 'SUCCESS'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
+            }
+            post {
+                always {
+                    emailext (
+                        subject: "Test Stage Result: ${currentBuild.result}",
+                        body: "The test stage has completed with status: ${currentBuild.result}",
+                        to: 'raminsenmitha@gmail.com',
+                        attachmentsPattern: 'logs/checkout_log.txt, logs/install_log.txt, logs/test_log.txt'
+                    )
+                }
             }
         }
 
         stage('Generate Coverage Report') {
             steps {
-                bat 'npm run coverage || exit /b 0'
+                sh '''
+                echo "Generating coverage report..." > $LOG_DIR/coverage_log.txt
+                npm run coverage >> $LOG_DIR/coverage_log.txt 2>&1
+                '''
             }
         }
 
         stage('NPM Audit (Security Scan)') {
             steps {
-                bat 'npm audit || exit /b 0'
-            }
-        }
-
-        stage('Email Notification') {
-            steps {
-                echo "Building..."
+                script {
+                    try {
+                        sh '''
+                        echo "Running NPM audit..." > $LOG_DIR/security_log.txt
+                        npm audit >> $LOG_DIR/security_log.txt 2>&1
+                        '''
+                        currentBuild.result = 'SUCCESS'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
             }
             post {
-                success {
-                    mail to: 'raminsenmitha@gmail.com',
-                         subject: 'Build Status Email',
-                         body: 'Build Was Successful'
+                always {
+                    emailext (
+                        subject: "Security Scan Result: ${currentBuild.result}",
+                        body: "Security scan completed with status: ${currentBuild.result}",
+                        to: 'raminsenmitha@gmail.com',
+                        attachmentsPattern: 'logs/security_log.txt, logs/coverage_log.txt'
+                    )
                 }
             }
         }
