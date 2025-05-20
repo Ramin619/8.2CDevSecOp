@@ -3,6 +3,7 @@ pipeline {
 
   environment {
     LOG_DIR = "E:\\Deakin University\\T1 S1\\SIT753 - Professional Practice in Information Technology\\8.1C - Continuous Integration and DevSecOps in with Jenkins"
+    LOG_FILE = "${LOG_DIR}\\pipeline_log.txt"
   }
 
   stages {
@@ -13,8 +14,9 @@ pipeline {
           if not exist "${LOG_DIR}" (
             mkdir "${LOG_DIR}"
           )
-          echo Starting Checkout... > "${LOG_DIR}\\checkout_log.txt"
-          echo Repository was already checked out by Jenkins >> "${LOG_DIR}\\checkout_log.txt"
+          echo ======= Checkout Stage ======= > "${LOG_FILE}"
+          echo Repository was already checked out by Jenkins >> "${LOG_FILE}"
+          echo [SUCCESS] Checkout completed >> "${LOG_FILE}"
           """
         }
       }
@@ -23,10 +25,19 @@ pipeline {
     stage('Install Dependencies') {
       steps {
         script {
+          def result = bat(script: """
+            echo. >> "${LOG_FILE}"
+            echo ======= Install Dependencies ======= >> "${LOG_FILE}"
+            npm install >> "${LOG_FILE}" 2>>&1
+          """, returnStatus: true)
+
           bat """
-          echo Installing dependencies... > "${LOG_DIR}\\install_log.txt"
-          npm install >> "${LOG_DIR}\\install_log.txt" 2>>&1
+            echo [${result == 0 ? 'SUCCESS' : 'FAILURE'}] Dependency installation >> "${LOG_FILE}"
           """
+
+          if (result != 0) {
+            error("Install Dependencies failed")
+          }
         }
       }
     }
@@ -34,70 +45,71 @@ pipeline {
     stage('Run Tests') {
       steps {
         script {
-          try {
-            bat """
-            echo Running tests... > "${LOG_DIR}\\test_log.txt"
-            npm test >> "${LOG_DIR}\\test_log.txt" 2>>&1
+          def result = bat(script: """
+            echo. >> "${LOG_FILE}"
+            echo ======= Run Tests ======= >> "${LOG_FILE}"
+            npm test >> "${LOG_FILE}" 2>>&1
+          """, returnStatus: true)
 
-            REM Copy logs into Jenkins workspace for email attachment
-            copy "${LOG_DIR}\\checkout_log.txt" "checkout_log.txt"
-            copy "${LOG_DIR}\\install_log.txt" "install_log.txt"
-            copy "${LOG_DIR}\\test_log.txt" "test_log.txt"
-            """
-            currentBuild.result = 'SUCCESS'
-          } catch (e) {
-            currentBuild.result = 'FAILURE'
-            throw e
+          bat """
+            echo [${result == 0 ? 'SUCCESS' : 'FAILURE'}] Tests execution >> "${LOG_FILE}"
+          """
+
+          if (result != 0) {
+            error("Tests failed")
           }
-        }
-      }
-      post {
-        always {
-          emailext(
-            subject: "Test Stage Result: ${currentBuild.result}",
-            body:    "The test stage has completed with status: ${currentBuild.result}",
-            to:      'raminsenmitha@gmail.com',
-            attachmentsPattern: 'checkout_log.txt,install_log.txt,test_log.txt'
-          )
         }
       }
     }
 
     stage('Generate Coverage Report') {
       steps {
-        bat """
-        echo Generating coverage report... > "${LOG_DIR}\\coverage_log.txt"
-        npm run coverage >> "${LOG_DIR}\\coverage_log.txt" 2>>&1
-        """
+        script {
+          def result = bat(script: """
+            echo. >> "${LOG_FILE}"
+            echo ======= Generate Coverage Report ======= >> "${LOG_FILE}"
+            npm run coverage >> "${LOG_FILE}" 2>>&1
+          """, returnStatus: true)
+
+          bat """
+            echo [${result == 0 ? 'SUCCESS' : 'FAILURE'}] Coverage generation >> "${LOG_FILE}"
+          """
+
+          if (result != 0) {
+            error("Coverage report failed")
+          }
+        }
       }
     }
 
     stage('NPM Audit (Security Scan)') {
       steps {
         script {
-          try {
-            bat """
-            echo Running NPM audit... > "${LOG_DIR}\\security_log.txt"
-            npm audit >> "${LOG_DIR}\\security_log.txt" 2>>&1
+          def result = bat(script: """
+            echo. >> "${LOG_FILE}"
+            echo ======= NPM Audit (Security Scan) ======= >> "${LOG_FILE}"
+            npm audit >> "${LOG_FILE}" 2>>&1
+          """, returnStatus: true)
 
-            REM Copy remaining logs for attachment
-            copy "${LOG_DIR}\\coverage_log.txt" "coverage_log.txt"
-            copy "${LOG_DIR}\\security_log.txt" "security_log.txt"
-            """
-            currentBuild.result = 'SUCCESS'
-          } catch (e) {
-            currentBuild.result = 'FAILURE'
-            throw e
+          bat """
+            echo [${result == 0 ? 'SUCCESS' : 'FAILURE'}] Security scan >> "${LOG_FILE}"
+          """
+
+          // Copy final log to workspace so it can be emailed
+          bat """copy "${LOG_FILE}" "pipeline_log.txt" """
+
+          if (result != 0) {
+            error("Security scan failed")
           }
         }
       }
       post {
         always {
           emailext(
-            subject: "Security Scan Result: ${currentBuild.result}",
-            body:    "Security scan completed with status: ${currentBuild.result}",
+            subject: "Full Pipeline Result: ${currentBuild.result}",
+            body:    "Attached is the full pipeline log including success/failure for each stage.",
             to:      'raminsenmitha@gmail.com',
-            attachmentsPattern: 'coverage_log.txt,security_log.txt'
+            attachmentsPattern: 'pipeline_log.txt'
           )
         }
       }
