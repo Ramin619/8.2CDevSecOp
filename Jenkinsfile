@@ -17,8 +17,9 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    def testStatus = bat(script: 'npm test > email_noti_tests.txt 2>&1', returnStatus: true)
-                    writeFile file: 'email_noti_tests.txt', text: "Run Tests Stage: ${testStatus == 0 ? 'SUCCESS' : 'FAILURE'}\n" + readFile('email_noti_tests.txt')
+                    def testStatus = bat(script: 'npm test > test_log.txt 2>&1', returnStatus: true)
+                    def result = testStatus == 0 ? 'SUCCESS' : 'FAILURE'
+                    writeFile file: 'test_log.txt', text: "Run Tests Stage: ${result}\n\n" + readFile('test_log.txt')
                 }
             }
         }
@@ -32,8 +33,9 @@ pipeline {
         stage('NPM Audit (Security Scan)') {
             steps {
                 script {
-                    def auditStatus = bat(script: 'npm audit > email_noti_audit.txt 2>&1', returnStatus: true)
-                    writeFile file: 'email_noti_audit.txt', text: "NPM Audit Stage: ${auditStatus == 0 ? 'SUCCESS' : 'FAILURE'}\n" + readFile('email_noti_audit.txt')
+                    def auditStatus = bat(script: 'npm audit > audit_log.txt 2>&1', returnStatus: true)
+                    def result = auditStatus == 0 ? 'SUCCESS' : 'FAILURE'
+                    writeFile file: 'audit_log.txt', text: "NPM Audit Stage: ${result}\n\n" + readFile('audit_log.txt')
                 }
             }
         }
@@ -42,9 +44,9 @@ pipeline {
             steps {
                 emailext(
                     to: 'raminsenmitha@gmail.com',
-                    subject: 'Build Status Email',
-                    body: 'Please find the status of the stages attached.',
-                    attachmentsPattern: 'email_noti_tests.txt,email_noti_audit.txt'
+                    subject: 'Build Stage Logs and Status',
+                    body: 'Attached are the logs for Run Tests and NPM Audit stages with their status.',
+                    attachmentsPattern: 'test_log.txt,audit_log.txt'
                 )
             }
         }
