@@ -12,7 +12,7 @@ pipeline {
                     bat "mkdir ${LOG_DIR}"
                     bat """
                     echo Starting Checkout... > ${LOG_DIR}\\checkout_log.txt
-                    git clone https://github.com/Ramin619/8.2CDevSecOp.git >> ${LOG_DIR}\\checkout_log.txt 2>>&1
+                    echo Repository was already checked out by Jenkins >> ${LOG_DIR}\\checkout_log.txt
                     """
                 }
             }
