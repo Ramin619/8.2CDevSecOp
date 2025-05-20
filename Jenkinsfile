@@ -43,7 +43,7 @@ pipeline {
               bat """
               echo. >> "${LOG_PATH}"
               echo ======= Run Tests ======= >> "${LOG_PATH}"
-              snyk auth %SNYK_TOKEN% >> "${LOG_PATH}" 2>>&1
+              set SNYK_TOKEN=%SNYK_TOKEN%
               npm test >> "${LOG_PATH}" 2>>&1
               echo [SUCCESS] Tests execution >> "${LOG_PATH}"
               """
@@ -56,7 +56,7 @@ pipeline {
       }
       post {
         always {
-          bat 'copy "${LOG_PATH}" "pipeline_log.txt"'
+          bat "copy \"${LOG_PATH}\" pipeline_log.txt"
           emailext(
             subject: "Test Stage Result: ${currentBuild.result}",
             body: "The test stage has completed with status: ${currentBuild.result}",
@@ -67,27 +67,39 @@ pipeline {
       }
     }
 
+    stage('Generate Coverage Report') {
+      steps {
+        bat """
+        echo. >> "${LOG_PATH}"
+        echo ======= Generate Coverage Report ======= >> "${LOG_PATH}"
+        npm run coverage >> "${LOG_PATH}" 2>>&1
+        echo [SUCCESS] Coverage report generation >> "${LOG_PATH}"
+        """
+      }
+    }
+
     stage('NPM Audit (Security Scan)') {
       steps {
         script {
           try {
             bat """
             echo. >> "${LOG_PATH}"
-            echo ======= NPM Audit (Security Scan) ======= >> "${LOG_PATH}"
+            echo ======= NPM Audit ======= >> "${LOG_PATH}"
             npm audit >> "${LOG_PATH}" 2>>&1
-            echo [SUCCESS] Security scan completed >> "${LOG_PATH}"
+            echo [SUCCESS] NPM Audit completed >> "${LOG_PATH}"
             """
           } catch (e) {
-            bat "echo [FAILURE] Security scan failed >> \"${LOG_PATH}\""
+            bat "echo [FAILURE] NPM Audit >> \"${LOG_PATH}\""
             error("Security scan failed")
           }
         }
       }
       post {
         always {
+          bat "copy \"${LOG_PATH}\" pipeline_log.txt"
           emailext(
             subject: "Security Scan Result: ${currentBuild.result}",
-            body: "The security scan completed with status: ${currentBuild.result}",
+            body: "The NPM audit stage has completed with status: ${currentBuild.result}",
             to: 'raminsenmitha@gmail.com',
             attachmentsPattern: 'pipeline_log.txt'
           )
