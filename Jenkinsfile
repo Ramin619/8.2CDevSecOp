@@ -18,14 +18,14 @@ pipeline {
             steps {
                 script {
                     def testStatus = bat(script: 'npm test > email_noti_tests.txt 2>&1', returnStatus: true)
-                    currentBuild.description = "Run Tests: ${testStatus == 0 ? 'SUCCESS' : 'FAILURE'}"
+                    currentBuild.description = "Test Status: ${testStatus == 0 ? 'SUCCESS' : 'FAILURE'}"
                 }
             }
             post {
                 always {
                     emailext(
                         to: 'raminsenmitha@gmail.com',
-                        subject: "Run Tests Stage Result: ${currentBuild.description}",
+                        subject: "Test Stage Result: ${currentBuild.description}",
                         body: 'The "Run Tests" stage has completed.\n\nCheck the attached log for test results.',
                         attachmentsPattern: 'email_noti_tests.txt'
                     )
@@ -43,7 +43,7 @@ pipeline {
             steps {
                 script {
                     def auditStatus = bat(script: 'npm audit > email_noti_audit.txt 2>&1', returnStatus: true)
-                    currentBuild.description = "Security Scan: ${auditStatus == 0 ? 'SUCCESS' : 'FAILURE'}"
+                    currentBuild.description = "Audit Status: ${auditStatus == 0 ? 'SUCCESS' : 'FAILURE'}"
                 }
             }
             post {
