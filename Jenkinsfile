@@ -1,3 +1,6 @@
+def testStatus = 'UNKNOWN'
+def scanStatus = 'UNKNOWN'
+
 pipeline {
     agent any
 
@@ -17,9 +20,8 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    def testStatus = bat(script: 'npm test > test_log.txt 2>&1', returnStatus: true)
-                    def result = testStatus == 0 ? 'SUCCESS' : 'FAILURE'
-                    writeFile file: 'test_log.txt', text: "Run Tests Stage: ${result}\n\n" + readFile('test_log.txt')
+                    def result = bat(script: 'npm test', returnStatus: true)
+                    testStatus = (result == 0) ? 'SUCCESS' : 'FAILURE'
                 }
             }
         }
@@ -33,21 +35,32 @@ pipeline {
         stage('NPM Audit (Security Scan)') {
             steps {
                 script {
-                    def auditStatus = bat(script: 'npm audit > audit_log.txt 2>&1', returnStatus: true)
-                    def result = auditStatus == 0 ? 'SUCCESS' : 'FAILURE'
-                    writeFile file: 'audit_log.txt', text: "NPM Audit Stage: ${result}\n\n" + readFile('audit_log.txt')
+                    def result = bat(script: 'npm audit', returnStatus: true)
+                    scanStatus = (result == 0) ? 'SUCCESS' : 'FAILURE'
                 }
             }
         }
 
         stage('Email Notification') {
             steps {
-                emailext(
-                    to: 'raminsenmitha@gmail.com',
-                    subject: 'Build Stage Logs and Status',
-                    body: 'Attached are the logs for Run Tests and NPM Audit stages with their status.',
-                    attachmentsPattern: 'test_log.txt,audit_log.txt'
-                )
+                script {
+                    def message = """\
+Build Completed
+
+Stage Results:
+- Run Tests: ${testStatus}
+- Security Scan: ${scanStatus}
+
+The full console log is attached.
+"""
+
+                    emailext(
+                        to: 'raminsenmitha@gmail.com',
+                        subject: "Build Summary – Tests: ${testStatus}, Scan: ${scanStatus}",
+                        body: message,
+                        attachLog: true
+                    )
+                }
             }
         }
     }
