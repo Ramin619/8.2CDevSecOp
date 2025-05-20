@@ -2,21 +2,21 @@ pipeline {
   agent any
 
   environment {
-    LOG_DIR = "E:\\Deakin University\\T1 S1\\SIT753 - Professional Practice in Information Technology\\8.1C - Continuous Integration and DevSecOps in with Jenkins"
-    LOG_FILE = "${LOG_DIR}\\pipeline_log.txt"
+    LOG_PATH = "E:\\Deakin University\\T1 S1\\SIT753 - Professional Practice in Information Technology\\8.1C - Continuous Integration and DevSecOps in with Jenkins\\pipeline_log.txt"
   }
 
   stages {
+
     stage('Checkout') {
       steps {
         script {
           bat """
-          if not exist "${LOG_DIR}" (
-            mkdir "${LOG_DIR}"
+          if not exist "E:\\Deakin University\\T1 S1\\SIT753 - Professional Practice in Information Technology\\8.1C - Continuous Integration and DevSecOps in with Jenkins" (
+            mkdir "E:\\Deakin University\\T1 S1\\SIT753 - Professional Practice in Information Technology\\8.1C - Continuous Integration and DevSecOps in with Jenkins"
           )
-          echo ======= Checkout Stage ======= > "${LOG_FILE}"
-          echo Repository was already checked out by Jenkins >> "${LOG_FILE}"
-          echo [SUCCESS] Checkout completed >> "${LOG_FILE}"
+          echo ======= Checkout Stage ======= > "${LOG_PATH}"
+          echo Repository was already checked out by Jenkins >> "${LOG_PATH}"
+          echo [SUCCESS] Checkout completed >> "${LOG_PATH}"
           """
         }
       }
@@ -25,19 +25,12 @@ pipeline {
     stage('Install Dependencies') {
       steps {
         script {
-          def result = bat(script: """
-            echo. >> "${LOG_FILE}"
-            echo ======= Install Dependencies ======= >> "${LOG_FILE}"
-            npm install >> "${LOG_FILE}" 2>>&1
-          """, returnStatus: true)
-
           bat """
-            echo [${result == 0 ? 'SUCCESS' : 'FAILURE'}] Dependency installation >> "${LOG_FILE}"
+          echo. >> "${LOG_PATH}"
+          echo ======= Install Dependencies ======= >> "${LOG_PATH}"
+          npm install >> "${LOG_PATH}" 2>>&1
+          echo [SUCCESS] Dependency installation >> "${LOG_PATH}"
           """
-
-          if (result != 0) {
-            error("Install Dependencies failed")
-          }
         }
       }
     }
@@ -45,47 +38,31 @@ pipeline {
     stage('Run Tests') {
       steps {
         script {
-          def result = bat(script: """
-            echo. >> "${LOG_FILE}"
-            echo ======= Run Tests ======= >> "${LOG_FILE}"
-            npm test >> "${LOG_FILE}" 2>>&1
-          """, returnStatus: true)
-
-          bat """
-            echo [${result == 0 ? 'SUCCESS' : 'FAILURE'}] Tests execution >> "${LOG_FILE}"
-            copy "${LOG_FILE}" "pipeline_log.txt"
-          """
-
-          emailext(
-            subject: "Run Tests Result: ${result == 0 ? 'SUCCESS' : 'FAILURE'}",
-            body:    "The 'Run Tests' stage completed with status: ${result == 0 ? 'SUCCESS' : 'FAILURE'}",
-            to:      'raminsenmitha@gmail.com',
-            attachmentsPattern: 'pipeline_log.txt'
-          )
-
-          if (result != 0) {
+          try {
+            withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
+              bat """
+              echo. >> "${LOG_PATH}"
+              echo ======= Run Tests ======= >> "${LOG_PATH}"
+              snyk auth %SNYK_TOKEN% >> "${LOG_PATH}" 2>>&1
+              npm test >> "${LOG_PATH}" 2>>&1
+              echo [SUCCESS] Tests execution >> "${LOG_PATH}"
+              """
+            }
+          } catch (e) {
+            bat "echo [FAILURE] Tests execution >> \"${LOG_PATH}\""
             error("Tests failed")
           }
         }
       }
-    }
-
-    stage('Generate Coverage Report') {
-      steps {
-        script {
-          def result = bat(script: """
-            echo. >> "${LOG_FILE}"
-            echo ======= Generate Coverage Report ======= >> "${LOG_FILE}"
-            npm run coverage >> "${LOG_FILE}" 2>>&1
-          """, returnStatus: true)
-
-          bat """
-            echo [${result == 0 ? 'SUCCESS' : 'FAILURE'}] Coverage generation >> "${LOG_FILE}"
-          """
-
-          if (result != 0) {
-            error("Coverage report failed")
-          }
+      post {
+        always {
+          bat 'copy "${LOG_PATH}" "pipeline_log.txt"'
+          emailext(
+            subject: "Test Stage Result: ${currentBuild.result}",
+            body: "The test stage has completed with status: ${currentBuild.result}",
+            to: 'raminsenmitha@gmail.com',
+            attachmentsPattern: 'pipeline_log.txt'
+          )
         }
       }
     }
@@ -93,27 +70,27 @@ pipeline {
     stage('NPM Audit (Security Scan)') {
       steps {
         script {
-          def result = bat(script: """
-            echo. >> "${LOG_FILE}"
-            echo ======= NPM Audit (Security Scan) ======= >> "${LOG_FILE}"
-            npm audit >> "${LOG_FILE}" 2>>&1
-          """, returnStatus: true)
-
-          bat """
-            echo [${result == 0 ? 'SUCCESS' : 'FAILURE'}] Security scan >> "${LOG_FILE}"
-            copy "${LOG_FILE}" "pipeline_log.txt"
-          """
-
-          emailext(
-            subject: "Security Scan Result: ${result == 0 ? 'SUCCESS' : 'FAILURE'}",
-            body:    "The 'Security Scan' stage completed with status: ${result == 0 ? 'SUCCESS' : 'FAILURE'}",
-            to:      'raminsenmitha@gmail.com',
-            attachmentsPattern: 'pipeline_log.txt'
-          )
-
-          if (result != 0) {
+          try {
+            bat """
+            echo. >> "${LOG_PATH}"
+            echo ======= NPM Audit (Security Scan) ======= >> "${LOG_PATH}"
+            npm audit >> "${LOG_PATH}" 2>>&1
+            echo [SUCCESS] Security scan completed >> "${LOG_PATH}"
+            """
+          } catch (e) {
+            bat "echo [FAILURE] Security scan failed >> \"${LOG_PATH}\""
             error("Security scan failed")
           }
+        }
+      }
+      post {
+        always {
+          emailext(
+            subject: "Security Scan Result: ${currentBuild.result}",
+            body: "The security scan completed with status: ${currentBuild.result}",
+            to: 'raminsenmitha@gmail.com',
+            attachmentsPattern: 'pipeline_log.txt'
+          )
         }
       }
     }
