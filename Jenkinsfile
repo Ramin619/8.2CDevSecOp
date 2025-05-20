@@ -17,14 +17,19 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    def testStatus = bat(script: 'npm test > email_noti_tests.txt 2>&1', returnStatus: true)
-                    def result = testStatus == 0 ? "SUCCESS" : "FAILURE"
-                    emailext(
-                        to: 'raminsenmitha@gmail.com',
-                        subject: "Test Stage Result: ${result}",
-                        body: "The 'Run Tests' stage has completed with status: ${result}.\nCheck the attached test log.",
-                        attachmentsPattern: 'email_noti_tests.txt'
-                    )
+                    withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
+                        // Authenticate snyk
+                        bat 'snyk config set api=%SNYK_TOKEN%'
+                        // Run tests
+                        def testStatus = bat(script: 'npm test > email_noti_tests.txt 2>&1', returnStatus: true)
+                        def result = testStatus == 0 ? "SUCCESS" : "FAILURE"
+                        emailext(
+                            to: 'raminsenmitha@gmail.com',
+                            subject: "Test Stage Result: ${result}",
+                            body: "The 'Run Tests' stage has completed with status: ${result}.\nCheck the attached test log.",
+                            attachmentsPattern: 'email_noti_tests.txt'
+                        )
+                    }
                 }
             }
         }
