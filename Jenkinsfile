@@ -53,7 +53,15 @@ pipeline {
 
           bat """
             echo [${result == 0 ? 'SUCCESS' : 'FAILURE'}] Tests execution >> "${LOG_FILE}"
+            copy "${LOG_FILE}" "pipeline_log.txt"
           """
+
+          emailext(
+            subject: "Run Tests Result: ${result == 0 ? 'SUCCESS' : 'FAILURE'}",
+            body:    "The 'Run Tests' stage completed with status: ${result == 0 ? 'SUCCESS' : 'FAILURE'}",
+            to:      'raminsenmitha@gmail.com',
+            attachmentsPattern: 'pipeline_log.txt'
+          )
 
           if (result != 0) {
             error("Tests failed")
@@ -93,7 +101,15 @@ pipeline {
 
           bat """
             echo [${result == 0 ? 'SUCCESS' : 'FAILURE'}] Security scan >> "${LOG_FILE}"
+            copy "${LOG_FILE}" "pipeline_log.txt"
           """
+
+          emailext(
+            subject: "Security Scan Result: ${result == 0 ? 'SUCCESS' : 'FAILURE'}",
+            body:    "The 'Security Scan' stage completed with status: ${result == 0 ? 'SUCCESS' : 'FAILURE'}",
+            to:      'raminsenmitha@gmail.com',
+            attachmentsPattern: 'pipeline_log.txt'
+          )
 
           if (result != 0) {
             error("Security scan failed")
@@ -102,21 +118,4 @@ pipeline {
       }
     }
   }
-
-  post {
-    always {
-      script {
-        // Copy the final log file into the Jenkins workspace for attachment
-        bat """copy "${LOG_FILE}" "pipeline_log.txt" """
-
-        emailext(
-          subject: "Full Pipeline Result: ${currentBuild.result}",
-          body:    "Attached is the full pipeline log including success/failure for each stage.",
-          to:      'raminsenmitha@gmail.com',
-          attachmentsPattern: 'pipeline_log.txt'
-        )
-      }
-    }
-  }
 }
-
