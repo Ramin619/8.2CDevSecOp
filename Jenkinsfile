@@ -16,27 +16,27 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                script {
-                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        bat 'npm test > test_log.txt 2>&1'
-                    }
-                }
+                bat 'npm test > email_noti.txt 2>&1'
             }
             post {
                 success {
                     emailext(
                         to: 'raminsenmitha@gmail.com',
                         subject: 'Run Tests: SUCCESS',
-                        body: 'The Run Tests stage completed successfully.',
-                        attachmentsPattern: 'test_log.txt'
+                        body: '''The "Run Tests" stage completed successfully.
+
+Please find the log attached.''',
+                        attachmentsPattern: 'email_noti.txt'
                     )
                 }
                 failure {
                     emailext(
                         to: 'raminsenmitha@gmail.com',
                         subject: 'Run Tests: FAILURE',
-                        body: 'The Run Tests stage failed. See attached log.',
-                        attachmentsPattern: 'test_log.txt'
+                        body: '''The "Run Tests" stage failed.
+
+Please find the log attached for details.''',
+                        attachmentsPattern: 'email_noti.txt'
                     )
                 }
             }
@@ -50,46 +50,28 @@ pipeline {
 
         stage('NPM Audit (Security Scan)') {
             steps {
-                script {
-                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        bat 'npm audit > audit_log.txt 2>&1'
-                    }
-                }
+                bat 'npm audit > email_noti.txt 2>&1'
             }
             post {
                 success {
                     emailext(
                         to: 'raminsenmitha@gmail.com',
                         subject: 'Security Scan: SUCCESS',
-                        body: 'NPM Audit completed successfully.',
-                        attachmentsPattern: 'audit_log.txt'
+                        body: '''The "Security Scan" stage completed successfully.
+
+Please find the log attached.''',
+                        attachmentsPattern: 'email_noti.txt'
                     )
                 }
                 failure {
                     emailext(
                         to: 'raminsenmitha@gmail.com',
                         subject: 'Security Scan: FAILURE',
-                        body: 'NPM Audit failed. See attached log.',
-                        attachmentsPattern: 'audit_log.txt'
-                    )
-                }
-            }
-        }
+                        body: '''The "Security Scan" stage failed.
 
-        stage('Email Notification') {
-            steps {
-                echo "Pipeline completed."
-            }
-            post {
-                success {
-                    mail to: 'raminsenmitha@gmail.com',
-                         subject: 'Build Status: SUCCESS',
-                         body: 'The build pipeline finished successfully.'
-                }
-                failure {
-                    mail to: 'raminsenmitha@gmail.com',
-                         subject: 'Build Status: FAILURE',
-                         body: 'The build pipeline failed.'
+Please find the log attached for vulnerability details.''',
+                        attachmentsPattern: 'email_noti.txt'
+                    )
                 }
             }
         }
