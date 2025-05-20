@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    LOG_DIR = "${WORKSPACE}\\logs"
+    LOG_DIR = "E:\\Deakin University\\T1 S1\\SIT753 - Professional Practice in Information Technology\\8.1C - Continuous Integration and DevSecOps in with Jenkins"
   }
 
   stages {
@@ -52,7 +52,7 @@ pipeline {
             subject: "Test Stage Result: ${currentBuild.result}",
             body:    "The test stage has completed with status: ${currentBuild.result}",
             to:      'raminsenmitha@gmail.com',
-            attachmentsPattern: 'logs/checkout_log.txt,logs/install_log.txt,logs/test_log.txt'
+            attachmentsPattern: 'E:/Deakin University/T1 S1/SIT753 - Professional Practice in Information Technology/8.1C - Continuous Integration and DevSecOps in with Jenkins/checkout_log.txt,E:/Deakin University/T1 S1/SIT753 - Professional Practice in Information Technology/8.1C - Continuous Integration and DevSecOps in with Jenkins/install_log.txt,E:/Deakin University/T1 S1/SIT753 - Professional Practice in Information Technology/8.1C - Continuous Integration and DevSecOps in with Jenkins/test_log.txt'
           )
         }
       }
@@ -88,7 +88,7 @@ pipeline {
             subject: "Security Scan Result: ${currentBuild.result}",
             body:    "Security scan completed with status: ${currentBuild.result}",
             to:      'raminsenmitha@gmail.com',
-            attachmentsPattern: 'logs/security_log.txt,logs/coverage_log.txt'
+            attachmentsPattern: 'E:/Deakin University/T1 S1/SIT753 - Professional Practice in Information Technology/8.1C - Continuous Integration and DevSecOps in with Jenkins/security_log.txt,E:/Deakin University/T1 S1/SIT753 - Professional Practice in Information Technology/8.1C - Continuous Integration and DevSecOps in with Jenkins/coverage_log.txt'
           )
         }
       }
