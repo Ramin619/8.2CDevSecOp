@@ -18,15 +18,11 @@ pipeline {
             steps {
                 script {
                     def testStatus = bat(script: 'npm test > email_noti_tests.txt 2>&1', returnStatus: true)
-                    currentBuild.description = "Test Status: ${testStatus == 0 ? 'SUCCESS' : 'FAILURE'}"
-                }
-            }
-            post {
-                always {
+                    def result = testStatus == 0 ? "SUCCESS" : "FAILURE"
                     emailext(
                         to: 'raminsenmitha@gmail.com',
-                        subject: "Test Stage Result: ${currentBuild.description}",
-                        body: 'The "Run Tests" stage has completed.\n\nCheck the attached log for test results.',
+                        subject: "Test Stage Result: ${result}",
+                        body: "The 'Run Tests' stage has completed with status: ${result}.\nCheck the attached test log.",
                         attachmentsPattern: 'email_noti_tests.txt'
                     )
                 }
@@ -43,15 +39,11 @@ pipeline {
             steps {
                 script {
                     def auditStatus = bat(script: 'npm audit > email_noti_audit.txt 2>&1', returnStatus: true)
-                    currentBuild.description = "Audit Status: ${auditStatus == 0 ? 'SUCCESS' : 'FAILURE'}"
-                }
-            }
-            post {
-                always {
+                    def result = auditStatus == 0 ? "SUCCESS" : "FAILURE"
                     emailext(
                         to: 'raminsenmitha@gmail.com',
-                        subject: "Security Scan Stage Result: ${currentBuild.description}",
-                        body: 'The "Security Scan" stage has completed.\n\nCheck the attached log for vulnerability results.',
+                        subject: "Security Scan Stage Result: Audit Status: ${result}",
+                        body: "The 'Security Scan' stage has completed with status: ${result}.\nCheck the attached audit log.",
                         attachmentsPattern: 'email_noti_audit.txt'
                     )
                 }
