@@ -2,18 +2,18 @@ pipeline {
     agent any
 
     environment {
-        LOG_DIR = "${WORKSPACE}/logs"
+        LOG_DIR = "${WORKSPACE}\\logs"
     }
 
     stages {
         stage('Checkout') {
             steps {
                 script {
-                    sh "mkdir -p ${LOG_DIR}"
-                    sh '''
-                    echo "Starting Checkout..." > $LOG_DIR/checkout_log.txt
-                    git clone https://github.com/Ramin619/8.2CDevSecOp.git >> $LOG_DIR/checkout_log.txt 2>&1
-                    '''
+                    bat "mkdir ${LOG_DIR}"
+                    bat """
+                    echo Starting Checkout... > ${LOG_DIR}\\checkout_log.txt
+                    git clone https://github.com/Ramin619/8.2CDevSecOp.git >> ${LOG_DIR}\\checkout_log.txt 2>>&1
+                    """
                 }
             }
         }
@@ -21,10 +21,10 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    sh '''
-                    echo "Installing dependencies..." > $LOG_DIR/install_log.txt
-                    npm install >> $LOG_DIR/install_log.txt 2>&1
-                    '''
+                    bat """
+                    echo Installing dependencies... > ${LOG_DIR}\\install_log.txt
+                    npm install >> ${LOG_DIR}\\install_log.txt 2>>&1
+                    """
                 }
             }
         }
@@ -33,10 +33,10 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh '''
-                        echo "Running tests..." > $LOG_DIR/test_log.txt
-                        npm test >> $LOG_DIR/test_log.txt 2>&1
-                        '''
+                        bat """
+                        echo Running tests... > ${LOG_DIR}\\test_log.txt
+                        npm test >> ${LOG_DIR}\\test_log.txt 2>>&1
+                        """
                         currentBuild.result = 'SUCCESS'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
@@ -58,10 +58,10 @@ pipeline {
 
         stage('Generate Coverage Report') {
             steps {
-                sh '''
-                echo "Generating coverage report..." > $LOG_DIR/coverage_log.txt
-                npm run coverage >> $LOG_DIR/coverage_log.txt 2>&1
-                '''
+                bat """
+                echo Generating coverage report... > ${LOG_DIR}\\coverage_log.txt
+                npm run coverage >> ${LOG_DIR}\\coverage_log.txt 2>>&1
+                """
             }
         }
 
@@ -69,10 +69,10 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh '''
-                        echo "Running NPM audit..." > $LOG_DIR/security_log.txt
-                        npm audit >> $LOG_DIR/security_log.txt 2>&1
-                        '''
+                        bat """
+                        echo Running NPM audit... > ${LOG_DIR}\\security_log.txt
+                        npm audit >> ${LOG_DIR}\\security_log.txt 2>>&1
+                        """
                         currentBuild.result = 'SUCCESS'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
