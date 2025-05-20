@@ -16,26 +16,21 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                bat 'npm test > email_noti.txt 2>&1'
+                script {
+                    def status = catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', returnStatus: true) {
+                        bat 'npm test > email_noti.txt 2>&1'
+                    }
+                    currentBuild.description = "Run Tests Status: ${status == 0 ? 'SUCCESS' : 'FAILURE'}"
+                }
             }
             post {
-                success {
+                always {
                     emailext(
                         to: 'raminsenmitha@gmail.com',
-                        subject: 'Run Tests: SUCCESS',
-                        body: '''The "Run Tests" stage completed successfully.
+                        subject: "Run Tests Stage Result: ${currentBuild.description}",
+                        body: '''The "Run Tests" stage has completed.
 
-Please find the log attached.''',
-                        attachmentsPattern: 'email_noti.txt'
-                    )
-                }
-                failure {
-                    emailext(
-                        to: 'raminsenmitha@gmail.com',
-                        subject: 'Run Tests: FAILURE',
-                        body: '''The "Run Tests" stage failed.
-
-Please find the log attached for details.''',
+Check the attached log for details.''',
                         attachmentsPattern: 'email_noti.txt'
                     )
                 }
@@ -50,26 +45,21 @@ Please find the log attached for details.''',
 
         stage('NPM Audit (Security Scan)') {
             steps {
-                bat 'npm audit > email_noti.txt 2>&1'
+                script {
+                    def auditStatus = catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', returnStatus: true) {
+                        bat 'npm audit > email_noti.txt 2>&1'
+                    }
+                    currentBuild.description = "Audit Status: ${auditStatus == 0 ? 'SUCCESS' : 'FAILURE'}"
+                }
             }
             post {
-                success {
+                always {
                     emailext(
                         to: 'raminsenmitha@gmail.com',
-                        subject: 'Security Scan: SUCCESS',
-                        body: '''The "Security Scan" stage completed successfully.
+                        subject: "Security Scan Stage Result: ${currentBuild.description}",
+                        body: '''The "Security Scan" stage has completed.
 
-Please find the log attached.''',
-                        attachmentsPattern: 'email_noti.txt'
-                    )
-                }
-                failure {
-                    emailext(
-                        to: 'raminsenmitha@gmail.com',
-                        subject: 'Security Scan: FAILURE',
-                        body: '''The "Security Scan" stage failed.
-
-Please find the log attached for vulnerability details.''',
+Check the attached log for vulnerability results.''',
                         attachmentsPattern: 'email_noti.txt'
                     )
                 }
