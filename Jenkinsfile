@@ -16,7 +16,11 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                bat 'npm test > test_log.txt 2>&1'
+                script {
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                        bat 'npm test > test_log.txt 2>&1'
+                    }
+                }
             }
             post {
                 success {
@@ -46,22 +50,26 @@ pipeline {
 
         stage('NPM Audit (Security Scan)') {
             steps {
-                bat 'npm audit > audit_log.txt 2>&1'
+                script {
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                        bat 'npm audit > audit_log.txt 2>&1'
+                    }
+                }
             }
             post {
                 success {
                     emailext(
                         to: 'raminsenmitha@gmail.com',
-                        subject: 'NPM Audit: SUCCESS',
-                        body: 'NPM audit completed successfully.',
+                        subject: 'Security Scan: SUCCESS',
+                        body: 'NPM Audit completed successfully.',
                         attachmentsPattern: 'audit_log.txt'
                     )
                 }
                 failure {
                     emailext(
                         to: 'raminsenmitha@gmail.com',
-                        subject: 'NPM Audit: FAILURE',
-                        body: 'NPM audit failed. See attached log.',
+                        subject: 'Security Scan: FAILURE',
+                        body: 'NPM Audit failed. See attached log.',
                         attachmentsPattern: 'audit_log.txt'
                     )
                 }
@@ -70,13 +78,18 @@ pipeline {
 
         stage('Email Notification') {
             steps {
-                echo "Building..."
+                echo "Pipeline completed."
             }
             post {
                 success {
                     mail to: 'raminsenmitha@gmail.com',
-                         subject: 'Build Status Email',
-                         body: 'Build Was Successful'
+                         subject: 'Build Status: SUCCESS',
+                         body: 'The build pipeline finished successfully.'
+                }
+                failure {
+                    mail to: 'raminsenmitha@gmail.com',
+                         subject: 'Build Status: FAILURE',
+                         body: 'The build pipeline failed.'
                 }
             }
         }
