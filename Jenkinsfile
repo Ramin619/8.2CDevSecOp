@@ -95,23 +95,26 @@ pipeline {
             echo [${result == 0 ? 'SUCCESS' : 'FAILURE'}] Security scan >> "${LOG_FILE}"
           """
 
-          // Copy final log to workspace so it can be emailed
-          bat """copy "${LOG_FILE}" "pipeline_log.txt" """
-
           if (result != 0) {
             error("Security scan failed")
           }
         }
       }
-      post {
-        always {
-          emailext(
-            subject: "Full Pipeline Result: ${currentBuild.result}",
-            body:    "Attached is the full pipeline log including success/failure for each stage.",
-            to:      'raminsenmitha@gmail.com',
-            attachmentsPattern: 'pipeline_log.txt'
-          )
-        }
+    }
+  }
+
+  post {
+    always {
+      script {
+        // Copy the final log file into the Jenkins workspace for attachment
+        bat """copy "${LOG_FILE}" "pipeline_log.txt" """
+
+        emailext(
+          subject: "Full Pipeline Result: ${currentBuild.result}",
+          body:    "Attached is the full pipeline log including success/failure for each stage.",
+          to:      'raminsenmitha@gmail.com',
+          attachmentsPattern: 'pipeline_log.txt'
+        )
       }
     }
   }
