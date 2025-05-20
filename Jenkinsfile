@@ -38,6 +38,11 @@ pipeline {
             bat """
             echo Running tests... > "${LOG_DIR}\\test_log.txt"
             npm test >> "${LOG_DIR}\\test_log.txt" 2>>&1
+
+            REM Copy logs into Jenkins workspace for email attachment
+            copy "${LOG_DIR}\\checkout_log.txt" "checkout_log.txt"
+            copy "${LOG_DIR}\\install_log.txt" "install_log.txt"
+            copy "${LOG_DIR}\\test_log.txt" "test_log.txt"
             """
             currentBuild.result = 'SUCCESS'
           } catch (e) {
@@ -52,7 +57,7 @@ pipeline {
             subject: "Test Stage Result: ${currentBuild.result}",
             body:    "The test stage has completed with status: ${currentBuild.result}",
             to:      'raminsenmitha@gmail.com',
-            attachmentsPattern: 'E:/Deakin University/T1 S1/SIT753 - Professional Practice in Information Technology/8.1C - Continuous Integration and DevSecOps in with Jenkins/checkout_log.txt,E:/Deakin University/T1 S1/SIT753 - Professional Practice in Information Technology/8.1C - Continuous Integration and DevSecOps in with Jenkins/install_log.txt,E:/Deakin University/T1 S1/SIT753 - Professional Practice in Information Technology/8.1C - Continuous Integration and DevSecOps in with Jenkins/test_log.txt'
+            attachmentsPattern: 'checkout_log.txt,install_log.txt,test_log.txt'
           )
         }
       }
@@ -74,6 +79,10 @@ pipeline {
             bat """
             echo Running NPM audit... > "${LOG_DIR}\\security_log.txt"
             npm audit >> "${LOG_DIR}\\security_log.txt" 2>>&1
+
+            REM Copy remaining logs for attachment
+            copy "${LOG_DIR}\\coverage_log.txt" "coverage_log.txt"
+            copy "${LOG_DIR}\\security_log.txt" "security_log.txt"
             """
             currentBuild.result = 'SUCCESS'
           } catch (e) {
@@ -88,7 +97,7 @@ pipeline {
             subject: "Security Scan Result: ${currentBuild.result}",
             body:    "Security scan completed with status: ${currentBuild.result}",
             to:      'raminsenmitha@gmail.com',
-            attachmentsPattern: 'E:/Deakin University/T1 S1/SIT753 - Professional Practice in Information Technology/8.1C - Continuous Integration and DevSecOps in with Jenkins/security_log.txt,E:/Deakin University/T1 S1/SIT753 - Professional Practice in Information Technology/8.1C - Continuous Integration and DevSecOps in with Jenkins/coverage_log.txt'
+            attachmentsPattern: 'coverage_log.txt,security_log.txt'
           )
         }
       }
